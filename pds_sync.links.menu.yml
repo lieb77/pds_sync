@@ -1,0 +1,6 @@
+pds_sync.settings:
+  title: PDS Sync Settings
+  description: Configure PDS Sync
+  parent: system.admin_config_services
+  route_name: pds_sync.settings
+  weight: 10

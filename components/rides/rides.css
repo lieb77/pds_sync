@@ -1,0 +1,4 @@
+
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator { display: inline; }
+.htmx-request.pds-ride-row { opacity: 0.5; transition: opacity 200ms ease-in; }

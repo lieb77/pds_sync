@@ -1,0 +1,47 @@
+pds_sync.settings:
+  path: '/admin/config/services/pdssettings'
+  defaults:
+    _title: 'pds_sync Settings'
+    _form: 'Drupal\pds_sync\Form\SettingsForm'
+  requirements:
+    _permission: 'administer site configuration'
+
+pds_sync.rides:
+  path: '/pds-sync/rides'
+  defaults:
+    _title: 'List Rides'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::rides'
+  requirements:
+    _permission: 'access content'
+
+pds_sync.admin:
+  path: '/pds-sync'
+  defaults:
+    _title: 'PDS Sync'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::admin'
+  requirements:
+    _permission: 'access content'
+
+pds_sync.logout:
+  path: '/pds-sync/logout'
+  defaults:
+    _title: 'PDS Logout'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::logout'
+  requirements:
+    _permission: 'access content'
+
+pds_sync.update:
+  path: '/pds-sync/update'
+  defaults:
+    _title: 'PDS update'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::update'
+  requirements:
+    _permission: 'access content'
+
+pds_sync.delete:
+  path: '/pds-sync/delete'
+  defaults:
+    _title: 'PDS delete'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::delete'
+  requirements:
+    _permission: 'access content'

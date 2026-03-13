@@ -1,0 +1,8 @@
+name: 'PDS Sync'
+type: module
+description: 'PDS Management for Drupal'
+package: Custom
+core_version_requirement: ^10 || ^11
+configure: pds_sync.settings
+dependencies:
+  - key:key
