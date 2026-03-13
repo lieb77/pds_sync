@@ -1,4 +1,7 @@
-blueksy_cdn:
-  css:
-    component:
-      //web-cdn.bsky.app/static/css/main.183e8650.css: {}
+pds_sync:
+  version: VERSION
+  dependencies:
+    - core/htmx
+    - core/drupal
+    - core/drupal.htmx
+    

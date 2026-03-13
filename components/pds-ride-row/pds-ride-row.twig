@@ -16,18 +16,18 @@
 	<td>
 	  <div class="button-group">
 		{% if ride.sync_meta.status != 'synced' %}
-		  <button hx-post="/pds-sync/update/{{ ride.rkey }}" 
-				  hx-target="#ride-{{ ride.rkey }}" 
-				  hx-swap="outerHTML"
+		  <button data-hx-post="/pds-sync/update/{{ ride.rkey }}" 
+				  data-hx-target="#ride-{{ ride.rkey }}" 
+				  data-hx-swap="outerHTML"
 				  class="button--small">
 			Sync
 		  </button>
 		{% endif %}
 
-		<button hx-delete="/pds-sync/delete/{{ ride.rkey }}" 
-				hx-confirm="Delete from PDS?" 
-				hx-target="#ride-{{ ride.rkey }}" 
-				hx-swap="delete"
+		<button data-hx-delete="/pds-sync/delete/{{ ride.rkey }}" 
+				data-hx-confirm="Delete from PDS?" 
+				data-hx-target="#ride-{{ ride.rkey }}" 
+				data-hx-swap="delete"
 				class="button--danger button--small">
 		  Delete
 		</button>
