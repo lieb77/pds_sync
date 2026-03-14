@@ -1,4 +1,7 @@
 services:
+  pds_sync.controller:
+    class: Drupal\pds_sync\Controller\PdsSyncController
+
   logger.channel.pds_sync:
     parent: logger.channel_base
     arguments: ['pds_sync']
@@ -17,7 +20,7 @@ services:
       - '@pds_sync.endpoints'
 
 
-  pds_sync.pds_repo:
+  pds_sync.repository:
     class: Drupal\pds_sync\PdsRepository
     arguments:
       - '@pds_sync.atproto_client'
@@ -25,15 +28,23 @@ services:
       - '@state'
       - '@entity_type.manager'
       - '@logger.channel.pds_sync'
+      - '@datetime.time'
  
   Drupal\pds_sync\Hook\PdsSyncHooks:
     class: Drupal\pds_sync\Hook\PdsSyncHooks
     arguments: 
-      - '@pds_sync.pds_repo'
+      - '@pds_sync.repository'
       - '@state'
       - '@datetime.time'
       - '@date.formatter'
       - '@logger.channel.pds_sync'
 
-  pds_sync.controller:
-    class: Drupal\pds_sync\Controller\PdsSyncController
+  
+  pds_sync.manager:
+    class: Drupal\pds_sync\PdsSyncManager
+    arguments: 
+      - '@entity_type.manager'
+      - '@state'
+      - '@pds_sync.repository'
+      - '@datetime.time'
+      - '@logger.factory'

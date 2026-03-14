@@ -1,0 +1,26 @@
+/* Ensure text remains visible using theme variables */
+.pds-row {
+  color: var(--maple-text-content);
+  transition: opacity 250ms ease-in-out, background-color 250ms ease-in-out;
+}
+
+/* HTMX Transition state */
+.pds-row.htmx-swapping {
+  opacity: 0.4; /* Don't go to 0, or it "flickers" out */
+}
+
+/* State-based Row Highlighting */
+.pds-row.status-synced {
+  /* Using your card background as a base with a slight tint if desired */
+  background-color: var(--maple-bg-card);
+  border-left: 4px solid #28a745; /* Success Green */
+}
+
+.pds-row.status-archived {
+  background-color: var(--maple-bg-card);
+  border-left: 4px solid #ffc107; /* Warning Yellow */
+}
+
+.pds-row.status-untracked {
+  background-color: var(--maple-bg-content);
+}

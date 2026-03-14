@@ -1,0 +1,4 @@
+administer pds sync:
+  title: 'Administer PDS Synchronization'
+  description: 'Allows users to sync and delete rides from the AT Protocol PDS.'
+  restrict access: true

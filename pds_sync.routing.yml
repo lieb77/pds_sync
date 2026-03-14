@@ -6,6 +6,14 @@ pds_sync.settings:
   requirements:
     _permission: 'administer site configuration'
 
+pds_sync.dashboard:
+  path: '/pds-sync'
+  defaults:
+    _title: 'PDS Sync Dashboard'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::dashboard'
+  requirements:
+    _permission: 'access content'
+
 pds_sync.rides:
   path: '/pds-sync/rides'
   defaults:
@@ -13,15 +21,7 @@ pds_sync.rides:
     _controller: '\Drupal\pds_sync\Controller\PdsSyncController::rides'
   requirements:
     _permission: 'access content'
-
-pds_sync.admin:
-  path: '/pds-sync'
-  defaults:
-    _title: 'PDS Sync'
-    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::admin'
-  requirements:
-    _permission: 'access content'
-
+    
 pds_sync.logout:
   path: '/pds-sync/logout'
   defaults:
@@ -31,7 +31,7 @@ pds_sync.logout:
     _permission: 'access content'
 
 pds_sync.update:
-  path: '/pds-sync/update'
+  path: '/pds-sync/update/{rkey}'
   defaults:
     _title: 'PDS update'
     _controller: '\Drupal\pds_sync\Controller\PdsSyncController::update'
@@ -39,9 +39,10 @@ pds_sync.update:
     _permission: 'access content'
 
 pds_sync.delete:
-  path: '/pds-sync/delete'
+  path: '/pds-sync/delete/{rkey}'
   defaults:
     _title: 'PDS delete'
     _controller: '\Drupal\pds_sync\Controller\PdsSyncController::delete'
   requirements:
     _permission: 'access content'
+  methods: [DELETE]

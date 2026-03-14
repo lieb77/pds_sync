@@ -10,6 +10,7 @@ use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Component\Datetime\TimeInterface;
 
 use Drupal\pds_sync\AtprotoClient;
 use Drupal\pds_sync\Endpoints;
@@ -24,6 +25,7 @@ class PdsRepository {
     	protected StateInterface $state,
     	protected EntityTypeManagerInterface $entityTypeManager,
     	protected LoggerChannelInterface $logger,
+    	protected TimeInterface $time,
     ){
         $this->did = $atprotoClient->getDid();
     }
@@ -65,68 +67,6 @@ class PdsRepository {
 		]);
 	}
 
-	/**
-      * Get Rides
-      */
-	public function getRides() {
-		$endpoint = $this->endpoints->listRecords();
-		$query = ['query' => [
-			'repo' => $this->did,
-			'collection' => 'net.paullieberman.bike.ride'
-		]];
-		
-		$data = $this->atprotoClient->request('GET', $endpoint, $query);
-		
-		// Map through the records and attach the status before returning
-		$rides = array_map(function($record) {
-			$record_array = (array) $record->value;
-			
-			// Extract the rkey (UUID) from the AT-URI
-			$parts = explode('/', $record->uri);
-			$record_array['rkey'] = end($parts);
-			
-			// Attach reconciliation data
-			$record_array['sync_meta'] = $this->getReconciledStatus($record_array);
-			
-			return $record_array;
-		}, $data->records);
-		usort($rides, function ($a, $b) {
-         	return strcmp($b['date'], $a['date']);
-    	});
-    	return $rides;
-	}
-
-
-	/**
-	 * Synchronizes a specific PDS record by its rkey (UUID).
-	 */
-	public function syncByRkey(string $rkey): bool {
-		// 1. Find the local node by UUID
-		$nodes = $this->entityTypeManager->getStorage('node')
-			->loadByProperties(['uuid' => $rkey]);
-		
-		$node = reset($nodes);
-		
-		if (!$node) {
-			// IT Vet Log: Don't just fail silently; log the Ghost attempt.
-			$this->logger->error('Sync failed: No local node found for UUID @uuid', ['@uuid' => $rkey]);
-			return false;
-		}
-		
-		// 2. Reuse your existing sync logic from the DrupalSky extraction
-		// This likely calls your atproto client to PUT/POST the record.
-		$result = $this->syncRide($node);
-		
-		if ($result) {
-			// 3. Update the State store to mark it as Synced
-			// We use the UUID as the key to keep it portable across environments.
-			$this->state->set('pds_sync.sync.' . $node->uuid(), $this->time->getRequestTime());
-		
-			$this->logger->info('Manual dashboard sync successful for ride @uuid', ['@uuid' => $rkey]);
-			return true;
-		}		
-		return false;
-	}
 
 
 	/**
@@ -161,6 +101,92 @@ class PdsRepository {
 			return false;
 		}
 	}
+
+
+
+
+	/**
+     * Get Rides
+     */
+	public function getRides() {
+    $endpoint = $this->endpoints->listRecords();
+    $all_records = [];
+    $cursor = NULL;
+
+    // 1. The Paginator: Get everything from the PDS
+    do {
+        $query = ['query' => [
+            'repo' => $this->did,
+            'collection' => 'net.paullieberman.bike.ride',
+            'limit' => 100,
+        ]];
+        
+        if ($cursor) {
+            $query['query']['cursor'] = $cursor;
+        }
+
+        $response = $this->atprotoClient->request('GET', $endpoint, $query);
+        $all_records = array_merge($all_records, $response->records);
+        $cursor = $response->cursor ?? NULL;
+    } while ($cursor);
+
+    // 2. The Transformer: Convert stdClass to your enriched Array structure
+    $rides = array_map(function($record) {
+        $record_array = (array) $record->value;
+        
+        // Extract the rkey (UUID) from the AT-URI
+        $parts = explode('/', $record->uri);
+        $record_array['rkey'] = end($parts);
+        
+        // Attach reconciliation data (the status info)
+        $record_array['sync_meta'] = $this->getReconciledStatus($record_array);
+        
+        return $record_array;
+    }, $all_records);
+
+    // 3. The Sorter: Reverse chronological by date string
+    usort($rides, function ($a, $b) {
+        return strcmp($b['date'], $a['date']);
+    });
+
+    return $rides;
+}
+
+
+
+
+	/**
+	 * Synchronizes a specific PDS record by its rkey (UUID).
+	 */
+	public function syncByRkey(string $rkey): bool {
+		// 1. Find the local node by UUID
+		$nodes = $this->entityTypeManager->getStorage('node')
+			->loadByProperties(['uuid' => $rkey]);
+		
+		$node = reset($nodes);
+		
+		if (!$node) {
+			// IT Vet Log: Don't just fail silently; log the Ghost attempt.
+			$this->logger->error('Sync failed: No local node found for UUID @uuid', ['@uuid' => $rkey]);
+			return false;
+		}
+		
+		// 2. Reuse your existing sync logic from the DrupalSky extraction
+		// This likely calls your atproto client to PUT/POST the record.
+		$result = $this->syncRide($node);
+		
+		if ($result) {
+			// 3. Update the State store to mark it as Synced
+			// We use the UUID as the key to keep it portable across environments.
+			$this->state->set('pds_sync.sync.' . $node->uuid(), $this->time->getRequestTime());
+		
+			$this->logger->info('Manual dashboard sync successful for ride @uuid', ['@uuid' => $rkey]);
+			return true;
+		}		
+		return false;
+	}
+
+
 
 
 	/**
