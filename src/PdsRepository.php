@@ -17,7 +17,7 @@ use Drupal\pds_sync\Endpoints;
 
 class PdsRepository {
 
-    protected $did; 
+    protected $did;
 
 	public function __construct(
 		protected AtprotoClient $atprotoClient,
@@ -33,19 +33,19 @@ class PdsRepository {
 	/**
 	 *
 	 *
-	 */ 
+	 */
 	public function syncRide(NodeInterface $node) {
 		$rkey = $node->uuid();
-		
+
 		// Must dereference the bike
 		$bid      = $node->field_bike->target_id;
 		$bikeName = $bid ? Node::load($bid)->getTitle() : 'Unknown Bike';
-		
+
 		// Get your field_ridedate string (e.g., "2026-03-10")
 		$rideDateRaw = $node->get('field_ridedate')->value;
 		// Append time and Z for AT Protocol compliance
 		$isoDate = $rideDateRaw ? $rideDateRaw . 'T12:00:00Z' : date('c', $node->getCreatedTime());
-		
+
 		$record = [
 			'$type' => 'net.paullieberman.bike.ride',
 			'createdAt' => $isoDate, // ADD THIS: The field the network uses for sorting
@@ -56,7 +56,7 @@ class PdsRepository {
 			'url'   => $node->toUrl('canonical', ['absolute' => TRUE])->toString(),
 			'body'  => MailFormatHelper::htmlToText($node->body->value),
 		];
-		
+
 		return $this->atprotoClient->request('POST', $this->endpoints->putRecord(), [
 			'json' => [
 				'repo' => $this->atprotoClient->getDid(),
@@ -74,22 +74,22 @@ class PdsRepository {
 	 */
 	public function deleteRide(string $rkey): bool {
 		$endpoint = $this->endpoints->deleteRecord();
-		
+
 		$payload = [
 			'repo' => $this->did,
 			'collection' => 'net.paullieberman.bike.ride',
 			'rkey' => $rkey,
 		];
-		
+
 		try {
 			// AT Protocol DELETE requests typically use POST to the com.atproto.repo.deleteRecord endpoint
 			$response = $this->atprotoClient->request('POST', $endpoint, [
 				'json' => $payload,
 			]);
-			
+
 			// If successful, clean up the local state so we don't have orphaned sync data
 			$this->state->delete('pds_sync.sync.' . $rkey);
-			
+
 			$this->logger->info('Deleted ride @rkey from PDS.', ['@rkey' => $rkey]);
 			return true;
 		}
@@ -120,7 +120,7 @@ class PdsRepository {
             'collection' => 'net.paullieberman.bike.ride',
             'limit' => 100,
         ]];
-        
+
         if ($cursor) {
             $query['query']['cursor'] = $cursor;
         }
@@ -133,14 +133,14 @@ class PdsRepository {
     // 2. The Transformer: Convert stdClass to your enriched Array structure
     $rides = array_map(function($record) {
         $record_array = (array) $record->value;
-        
+
         // Extract the rkey (UUID) from the AT-URI
         $parts = explode('/', $record->uri);
         $record_array['rkey'] = end($parts);
-        
+
         // Attach reconciliation data (the status info)
         $record_array['sync_meta'] = $this->getReconciledStatus($record_array);
-        
+
         return $record_array;
     }, $all_records);
 
@@ -162,27 +162,27 @@ class PdsRepository {
 		// 1. Find the local node by UUID
 		$nodes = $this->entityTypeManager->getStorage('node')
 			->loadByProperties(['uuid' => $rkey]);
-		
+
 		$node = reset($nodes);
-		
+
 		if (!$node) {
 			// IT Vet Log: Don't just fail silently; log the Ghost attempt.
 			$this->logger->error('Sync failed: No local node found for UUID @uuid', ['@uuid' => $rkey]);
 			return false;
 		}
-		
+
 		// 2. Reuse your existing sync logic from the DrupalSky extraction
 		// This likely calls your atproto client to PUT/POST the record.
 		$result = $this->syncRide($node);
-		
+
 		if ($result) {
 			// 3. Update the State store to mark it as Synced
 			// We use the UUID as the key to keep it portable across environments.
 			$this->state->set('pds_sync.sync.' . $node->uuid(), $this->time->getRequestTime());
-		
+
 			$this->logger->info('Manual dashboard sync successful for ride @uuid', ['@uuid' => $rkey]);
 			return true;
-		}		
+		}
 		return false;
 	}
 
@@ -194,11 +194,11 @@ class PdsRepository {
 	 */
 	private function getReconciledStatus(array $pds_record): array {
 		$uuid = $pds_record['rkey'];
-		
+
 		// 1. Find the Node.
 		$nodes = $this->entityTypeManager->getStorage('node')->loadByProperties(['uuid' => $uuid]);
 		$node = reset($nodes);
-		
+
 		if (!$node) {
 			return [
 				'status' => 'ghost',
@@ -206,13 +206,13 @@ class PdsRepository {
 				'class' => 'status-danger',
 			];
 		}
-		
+
 		// 2. Check the local State.
 		$last_sync_timestamp = $this->state->get('pds_sync.sync.' . $node->uuid());
-		
+
 		// 3. Compare changed time vs last sync.
 		$is_changed_since_sync = $node->getChangedTime() > ($last_sync_timestamp ?? 0);
-		
+
 		if (!$last_sync_timestamp) {
 			return [
 				'status' => 'untracked',
@@ -221,7 +221,7 @@ class PdsRepository {
 				'node' => $node,
 			];
 		}
-		
+
 		if ($is_changed_since_sync) {
 			return [
 				'status' => 'pending',
@@ -230,7 +230,7 @@ class PdsRepository {
 				'node' => $node,
 			];
 		}
-		
+
 		return [
 			'status' => 'synced',
 			'label' => 'Synced',
