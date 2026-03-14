@@ -49,32 +49,107 @@ final class PdsSyncController extends ControllerBase {
 	* PDS Admin Dashboard
 	*
 	*/
-	public function dashboard() {
+	public function dashboardShell() {
+		// 1. Keep your existing logic to generate the initial "Local Drupal" list
 		$nodes = $this->pdsSyncManager->getRecentRides(25);
 		$pds_rides = $this->pdsRepository->getRides();
-
+	
 		$rides = [];
 		foreach ($nodes as $node) {
-			// We map Drupal fields to the keys the SDC 'rides' component expects
 			$rides[] = [
-				'route' => $node->label(),
-				'date' => $node->get('field_ridedate')->value, // Ensure this matches your field name
-				'miles' => $node->get('field_miles')->value,
-				'bike' => $node->get('field_bike')->entity?->label(), // If it's a taxonomy/entity ref
-				'rkey' => $node->uuid(),
+				'route'     => $node->label(),
+				'date'      => $node->get('field_ridedate')->value, 
+				'miles'     => $node->get('field_miles')->value,
+				'bike'      => $node->get('field_bike')->entity?->label(),
+				'rkey'      => $node->uuid(),
 				'sync_meta' => $this->pdsSyncManager->getReconciledStatus($node, $pds_rides),
 			];
 		}
-
-		return [
+	
+		// 2. Render the initial table as a fragment for the shell
+		$initial_table = [
 			'#type' => 'component',
 			'#component' => 'pds_sync:rides',
+			'#props' => ['rides' => $rides],
+		];
+	
+		// 3. Return the Tabbed Shell SDC
+		return [
+			'#type' => 'component',
+			'#component' => 'pds_sync:pds-dashboard', // The new wrapper SDC
 			'#props' => [
-				'rides' => $rides,
+				'initial_view' => $this->renderer->renderInIsolation($initial_table),
 			],
 		];
 	}
 
+
+	public function drupalView() {
+		// 1. Get all relevant nodes (e.g., rides)
+		$nids = $this->nodeManager->getStorage('node')->getQuery()
+			->condition('type', 'ride') // Adjust if your machine name differs
+			->sort('field_ridedate', 'DESC')
+			->accessCheck(FALSE)
+			->execute();
+		$nodes = $this->nodeManager->getStorage('node')->loadMultiple($nids);
+		
+		// 2. Fetch fresh PDS data for reconciliation
+		$pds_rides = $this->pdsRepository->getRides();
+		
+		$rows = [];
+		foreach ($nodes as $node) {
+			$rows[] = $this->prepareRideData($node, $pds_rides);
+		}
+		
+		$build = [
+			'#type' => 'component',
+			'#component' => 'pds_sync:rides',
+			'#props' => [
+				'rides' => $rows,
+				'view_mode' => 'local',
+			],
+		];
+		
+		return new Response(trim((string) $this->renderer->renderInIsolation($build)));
+	}
+
+	public function pdsView() {
+		$pds_rides = $this->pdsRepository->getRides();
+		
+		$rows = [];
+		foreach ($pds_rides as $pds_ride) {
+			// 1. Check if we have this locally
+			$local_node = $this->pdsSyncManager->getLocalNodeByRkey($pds_ride['rkey']);
+			
+			// 2. Build the full object for the SDC, keeping your existing PDS fields
+			$rows[] = [
+				'route' => $pds_ride['route'],
+				'date'  => $pds_ride['date'],
+				'miles' => $pds_ride['miles'] ?? '--', // Pass through from PDS
+				'bike'  => $pds_ride['bike'] ?? 'Unknown', // Pass through from PDS
+				'rkey'  => $pds_ride['rkey'],
+				// Normalize the status so the Twig template gets the right classes
+				'sync_meta' => [
+					'status' => $local_node ? 'synced' : 'remote-only',
+					'label'  => $local_node ? 'Synced' : 'PDS Only',
+					'class'  => $local_node ? 'status-synced' : 'status-remote',
+				],
+			];
+		}
+		
+		$build = [
+			'#type'      => 'component',
+			'#component' => 'pds_sync:rides',
+			'#props'     => ['rides' => $rows],
+		];
+		
+		return new Response(trim((string) $this->renderer->renderInIsolation($build)));
+	}
+
+
+	/**
+	 * Update
+	 */
 	public function update($rkey) {
 		$success = $this->pdsRepository->syncByRkey($rkey);
 
@@ -86,17 +161,17 @@ final class PdsSyncController extends ControllerBase {
 			// 2. Prepare data, but MANUALLY set the sync_meta to 'Synced'
 			$ride_data = $this->prepareRideData($node, []); // Pass empty PDS array
 			$ride_data['sync_meta'] = [
-			  'label' => 'Synced',
-			  'class' => 'status-synced',
-			  'can_sync' => FALSE,
-			  'can_delete' => TRUE,
+			  'label' 		=> 'Synced',
+			  'class' 		=> 'status-synced',
+			  'can_sync' 	=> FALSE,
+			  'can_delete' 	=> TRUE,
 			];
 
 			// 3. Return the fresh row
 			$build = [
-			  '#type' => 'component',
-			  '#component' => 'pds_sync:pds-ride-row',
-			  '#props' => ['ride' => $ride_data],
+			  '#type' 		=> 'component',
+			  '#component' 	=> 'pds_sync:pds-ride-row',
+			  '#props' 		=> ['ride' => $ride_data],
 			];
 
 			$markup = $this->renderer->renderInIsolation($build);
@@ -123,9 +198,9 @@ final class PdsSyncController extends ControllerBase {
             $ride_data = $this->prepareRideData($node, []);
 
             $build = [
-              '#type' => 'component',
-              '#component' => 'pds_sync:pds-ride-row',
-              '#props' => ['ride' => $ride_data],
+              '#type' 		=> 'component',
+              '#component' 	=> 'pds_sync:pds-ride-row',
+              '#props' 		=> ['ride' => $ride_data],
             ];
 
             // 3. Return the fresh row HTML instead of an empty response
@@ -144,9 +219,9 @@ final class PdsSyncController extends ControllerBase {
 		$rides = $this->pdsRepository->getRides();
 
 		return [
-			'#type' => 'component',
+			'#type' 	 => 'component',
 			'#component' => 'pds_sync:rides',
-			'#props' => ['rides' => $rides],
+			'#props' 	 => ['rides' => $rides],
 		];
 	}
 
@@ -183,11 +258,11 @@ final class PdsSyncController extends ControllerBase {
 	  $sync_meta = $this->pdsSyncManager->getReconciledStatus($node, $pds_rides);
 
 	  return [
-		'route' => $node->label(),
-		'date' => $date_value,
-		'miles' => $miles,
-		'bike' => $bike_label,
-		'rkey' => $node->uuid(),
+		'route' 	=> $node->label(),
+		'date' 		=> $date_value,
+		'miles' 	=> $miles,
+		'bike' 		=> $bike_label,
+		'rkey' 		=> $node->uuid(),
 		'sync_meta' => $sync_meta,
 	  ];
 	}

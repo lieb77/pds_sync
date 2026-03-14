@@ -36,6 +36,20 @@ class PdsSyncManager {
         return $storage->loadMultiple($nids);
     }
 
+
+	/**
+	 * Finds a local ride node by its PDS rkey (UUID).
+	 */
+	public function getLocalNodeByRkey(string $rkey): ?\Drupal\node\NodeInterface {
+		$nodes = $this->entityTypeManager->getStorage('node')->loadByProperties([
+			'uuid' => $rkey,
+			'type' => 'ride', // Ensuring we only look at ride nodes
+		]);
+		
+		return $nodes ? reset($nodes) : NULL;
+	}
+
+
     /**
      * Checks the local sync state for a given node.
      */

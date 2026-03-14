@@ -27,3 +27,14 @@ See: https://www.drupal.org/node/895232 for further information.
 Current maintainers for Drupal 10:
 
 - FIRST_NAME LAST_NAME (NICKNAME) - https://www.drupal.org/u/NICKNAME
+
+## Statuses
+Status,Drupal Node,PDS Record,State Store,Visual Cue
+Untracked,Yes,No,No,Neutral/Gray
+Synced,Yes,Yes,Yes,Green
+Archived,Yes,No,Yes,Yellow/Amber
+Ghost,Yes,No,Yes,Technically a subset of Archived
+
+Status,PDS Record,Drupal Node,Visual Cue
+PDS Only,Yes,No,Blue or Neutral
+Synced,Yes,Yes,Green

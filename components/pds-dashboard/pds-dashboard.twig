@@ -1,0 +1,27 @@
+{# pds-dashboard.html.twig #}
+
+{{ attach_library('core/htmx') }}
+
+<div class="pds-dashboard maple-card">
+  <nav class="tabs" 
+       data-hx-target="#pds-active-view" 
+       data-hx-push-url="true">
+    
+    <button data-hx-get="/pds-sync/drupal-view" 
+            class="tab-link active"
+            onclick="updateActiveTab(this)">
+      Local Drupal
+    </button>
+    
+    <button data-hx-get="/pds-sync/pds-view" 
+            class="tab-link"
+            onclick="updateActiveTab(this)">
+      PDS Storage
+    </button>
+  </nav>
+
+  <div id="pds-active-view" class="tab-content">
+    {# Initial load will be the Drupal view #}
+    {{ initial_view }}
+  </div>
+</div>

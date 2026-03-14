@@ -9,18 +9,24 @@ pds_sync.settings:
 pds_sync.dashboard:
   path: '/pds-sync'
   defaults:
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::dashboardShell'
     _title: 'PDS Sync Dashboard'
-    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::dashboard'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer pds sync'
 
-pds_sync.rides:
-  path: '/pds-sync/rides'
+pds_sync.drupal_view:
+  path: '/pds-sync/drupal-view'
   defaults:
-    _title: 'List Rides'
-    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::rides'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::drupalView'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer pds sync'
+
+pds_sync.pds_view:
+  path: '/pds-sync/pds-view'
+  defaults:
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::pdsView'
+  requirements:
+    _permission: 'administer pds sync'
     
 pds_sync.logout:
   path: '/pds-sync/logout'
@@ -28,7 +34,7 @@ pds_sync.logout:
     _title: 'PDS Logout'
     _controller: '\Drupal\pds_sync\Controller\PdsSyncController::logout'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer pds sync'
 
 pds_sync.update:
   path: '/pds-sync/update/{rkey}'
@@ -36,7 +42,7 @@ pds_sync.update:
     _title: 'PDS update'
     _controller: '\Drupal\pds_sync\Controller\PdsSyncController::update'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer pds sync'
 
 pds_sync.delete:
   path: '/pds-sync/delete/{rkey}'
@@ -44,5 +50,5 @@ pds_sync.delete:
     _title: 'PDS delete'
     _controller: '\Drupal\pds_sync\Controller\PdsSyncController::delete'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer pds sync'
   methods: [DELETE]
