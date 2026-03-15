@@ -70,14 +70,13 @@ class PdsSyncHooks {
 		try {
 			$result = $this->pdsRepository->syncRide($node);			
 			if ($result) {
-				$this->messenger->addStatus("Ride synced to PDS.");
+				$this->logger->info("Ride data synced to PDS for node @id.", ['@id' => $node->id()]);
 				if ($node->isNew()) {
                 	$this->pdsRepository->postRideToTimeline($node);
-                	$this->messenger->addStatus("Ride announced on Bluesky.");
-            	}
-            
+					$this->logger->info("Ride @id announced on Bluesky timeline.", ['@id' => $node->id()]);            
+				}		
 			} else {
-				$this->messenger->addWarning("Local ride saved, but PDS sync failed. Check logs.");
+				$this->logger->warning("Local ride @id saved, but PDS data sync failed.", ['@id' => $node->id()]);
 			}
 		} catch (\Exception $e) {
 			$this->logger->critical("PDS Hook crashed: " . $e->getMessage());

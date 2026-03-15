@@ -246,7 +246,8 @@ class PdsRepository {
 	 */
 	public function postRideToTimeline(NodeInterface $node) {
 
-		$text = "Lieb's Ride Log: " . $node->label() . "\n";
+		$text = "Lieb's Ride Log: \n";
+		$text .= "Route: " . $node->label() . "\n";
 		$text .= "Date: " . $node->get('field_ridedate')->value . "\n";
 		$text .= "Distance: " . $node->get('field_miles')->value . " miles\n";
 		$text .= "Bike: " . $node->get('field_bike')->entity?->label();
@@ -271,7 +272,7 @@ class PdsRepository {
 			],
 		];		
 		return $this->atprotoClient->request('POST', $this->endpoints->createRecord(), [
-        	'json' => $payload,
+        	'json' => $postRecord,
     	]);	
 	}
 
