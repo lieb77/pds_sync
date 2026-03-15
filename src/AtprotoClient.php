@@ -95,6 +95,8 @@ class AtprotoClient {
 		}
 	
 		$default_options = [
+			'timeout'         => 5, // Total request time
+			'connect_timeout' => 2, // Time to establish connection
 			'headers' => [
 				'Content-Type'  => 'application/json',
 				'Accept'        => 'application/json',

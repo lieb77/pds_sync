@@ -4,3 +4,10 @@ pds_sync.settings:
   parent: system.admin_config_services
   route_name: pds_sync.settings
   weight: 10
+
+pds_sync.dashboard:
+  title: PDS Sync Dashboard
+  description: Manage ride synchronization to the PDS
+  parent: system.admin_content
+  route_name: pds_sync.dashboard
+  weight: 50 

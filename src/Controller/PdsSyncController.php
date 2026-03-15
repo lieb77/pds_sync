@@ -85,15 +85,7 @@ final class PdsSyncController extends ControllerBase {
 
 
 	public function drupalView() {
-		// 1. Get all relevant nodes (e.g., rides)
-		$nids = $this->nodeManager->getStorage('node')->getQuery()
-			->condition('type', 'ride') // Adjust if your machine name differs
-			->sort('field_ridedate', 'DESC')
-			->accessCheck(FALSE)
-			->execute();
-		$nodes = $this->nodeManager->getStorage('node')->loadMultiple($nids);
-		
-		// 2. Fetch fresh PDS data for reconciliation
+		$nodes = $this->pdsSyncManager->getRecentRides(25);		
 		$pds_rides = $this->pdsRepository->getRides();
 		
 		$rows = [];

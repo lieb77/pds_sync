@@ -7,76 +7,79 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\pds_sync\PdsRepository;
 
 /**
-  * Drush commands for pds_sync PDS syncing.
-  *
-  */
+ * Drush commands for pds_sync PDS syncing.
+ */
 class SyncDrushCommands extends DrushCommands {
 
-    /**
-     * The entity type manager.
-     *
-     * @var \Drupal\Core\Entity\EntityTypeManagerInterface
-     */
-    protected $entityTypeManager;
+  /**
+   * The node storage (aliased for consistency).
+   */
+  protected $nodeManager;
 
-    /**
-     * The PDS repository service.
-     *
-     * @var \Drupal\pds_sync\Service\PdsRepository
-     */
-    protected $pdsRepository;
+  /**
+   * The PDS repository service.
+   */
+  protected $pdsRepository;
 
-    public function __construct(
-        EntityTypeManagerInterface $entity_type_manager,
-        PdsRepository $pds_repository
-    ) {
-        parent::__construct();
-        $this->entityTypeManager = $entity_type_manager;
-        $this->pdsRepository = $pds_repository;
+  public function __construct(
+    EntityTypeManagerInterface $entity_type_manager,
+    PdsRepository $pds_repository
+  ) {
+    parent::__construct();
+    // Keeping the naming convention we liked in the Manager/Controller
+    $this->nodeManager = $entity_type_manager;
+    $this->pdsRepository = $pds_repository;
+  }
+
+  /**
+   * Syncs the most recent rides to the PDS.
+   *
+   * @command pds_sync:sync-recent
+   * @param int $limit The number of recent rides to sync.
+   * @usage drush pds_sync:sync-recent 15
+   * @category pds_sync
+   */
+  public function syncRecent(int $limit = 10): void {
+    // Query for the most recent rides based on your custom date field
+    $nids = $this->nodeManager->getStorage('node')->getQuery()
+      ->condition('type', 'ride')
+      ->sort('field_ridedate', 'DESC') // Most recent first
+      ->range(0, $limit)
+      ->accessCheck(FALSE)
+      ->execute();
+
+    if (empty($nids)) {
+      $this->logger()->warning(dt('No ride nodes found to sync.'));
+      return;
     }
 
-    /**
-     * Syncs historical rides to the PDS for a specific year.
-     *     
-     * @command pds_sync:sync-history
-  	 * @param string $year The year to sync (e.g. 2025)
-     * @usage drush pds_sync:sync-history 2025
-     * @category pds_sync
-     */
-    public function syncHistory(string $year): void {
-        $start = strtotime("$year-01-01 00:00:00");
-        $end = strtotime("$year-12-31 23:59:59");
+    $count = count($nids);
+    $this->output()->writeln(dt('Found @count recent rides. Starting sync...', [
+      '@count' => $count,
+    ]));
 
-        $nids = $this->entityTypeManager->getStorage('node')->getQuery()
-            ->condition('type', 'ride')
-            ->condition('created', [$start, $end], 'BETWEEN')
-            ->accessCheck(FALSE)
-            ->execute();
-
-        if (empty($nids)) {
-            $this->logger()->warning(dt('No rides found for year @year.', ['@year' => $year]));
-            return;
+    foreach ($nids as $nid) {
+      $node = $this->nodeManager->getStorage('node')->load($nid);
+      $this->output()->writeln(dt('Syncing: @title (@date)', [
+        '@title' => $node->label(),
+        '@date' => $node->get('field_ridedate')->value,
+      ]));
+      
+      try {
+        // Your hardened repository handles the connection check
+        $success = $this->pdsRepository->syncRide($node);
+        
+        if (!$success) {
+          $this->logger()->error(dt('PDS returned a failure for node @id.', ['@id' => $nid]));
         }
-
-        $this->output()->writeln(dt('Found @count rides for @year. Starting sync...', [
-            '@count' => count($nids),
-            '@year' => $year,
+      } catch (\Exception $e) {
+        $this->logger()->error(dt('Critical error syncing node @id: @msg', [
+          '@id' => $nid,
+          '@msg' => $e->getMessage(),
         ]));
-
-        foreach ($nids as $nid) {
-            $node = $this->entityTypeManager->getStorage('node')->load($nid);
-            $this->output()->writeln(dt('Syncing: @title', ['@title' => $node->label()]));
-            
-            try {
-                $this->pdsRepository->syncRide($node);
-            } catch (\Exception $e) {
-                $this->logger()->error(dt('Failed to sync node @id: @msg', [
-                    '@id' => $nid,
-                    '@msg' => $e->getMessage(),
-                ]));
-            }
-        }
-
-        $this->logger()->success(dt('Finished syncing @year history.', ['@year' => $year]));
+      }
     }
+
+    $this->logger()->success(dt('Finished processing @count rides.', ['@count' => $count]));
+  }
 }

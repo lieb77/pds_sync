@@ -65,17 +65,17 @@ class PdsSyncHooks {
 	#[Hook('node_insert')]
 	#[Hook('node_update')]
 	public function syncRideToPds(NodeInterface $node): void {
-		if ($node->bundle() !== 'ride') {
-			return;
-		}
-		
-		$result = $this->pdsRepository->syncRide($node);
-		
-		if ($result) {
-			// Use the injected services instead of static calls
-			$this->state->set('pds_sync.sync.' . $node->uuid(), $this->time->getRequestTime());
-			
-			$this->logger->info('Synced ride @id to PDS.', ['@id' => $node->uuid()]);
+		if ($node->bundle() !== 'ride') return;
+	
+		try {
+			$result = $this->pdsRepository->syncRide($node);			
+			if ($result) {
+				$this->messenger->addStatus("Ride synced to PDS.");
+			} else {
+				$this->messenger->addWarning("Local ride saved, but PDS sync failed. Check logs.");
+			}
+		} catch (\Exception $e) {
+			$this->logger->critical("PDS Hook crashed: " . $e->getMessage());
 		}
 	}
 		
