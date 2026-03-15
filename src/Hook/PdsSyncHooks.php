@@ -71,6 +71,11 @@ class PdsSyncHooks {
 			$result = $this->pdsRepository->syncRide($node);			
 			if ($result) {
 				$this->messenger->addStatus("Ride synced to PDS.");
+				if ($node->isNew()) {
+                	$this->pdsRepository->postRideToTimeline($node);
+                	$this->messenger->addStatus("Ride announced on Bluesky.");
+            	}
+            
 			} else {
 				$this->messenger->addWarning("Local ride saved, but PDS sync failed. Check logs.");
 			}

@@ -240,8 +240,40 @@ class PdsRepository {
 	}
 
 
+	/**
+	 * Create a regualar Bluesky post
+	 *
+	 */
+	public function postRideToTimeline(NodeInterface $node) {
 
+		$text = "Lieb's Ride Log: " . $node->label() . "\n";
+		$text .= "Date: " . $node->get('field_ridedate')->value . "\n";
+		$text .= "Distance: " . $node->get('field_miles')->value . " miles\n";
+		$text .= "Bike: " . $node->get('field_bike')->entity?->label();
+		
+		$uri = $node->toUrl()->setAbsolute()->toString();
+		
+		$postRecord = [
+			'repo' => $this->did,
+			'collection' => 'app.bsky.feed.post',
+			'record' => [
+				'$type' => 'app.bsky.feed.post',
+				'text' => $text,
+				'createdAt' => date('c'),
+				'embed' => [
+					'$type' => 'app.bsky.embed.external',
+					'external' => [
+						'uri' => $uri,
+						'title' => "Ride: " . $node->label(),
+						'description' => "View ride on my website.",
+					],
+				],
+			],
+		];		
+		return $this->atprotoClient->request('POST', $this->endpoints->createRecord(), [
+        	'json' => $payload,
+    	]);	
+	}
 
-
-
+// End of class
 }
