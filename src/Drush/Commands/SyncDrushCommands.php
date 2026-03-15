@@ -68,6 +68,7 @@ class SyncDrushCommands extends DrushCommands {
       try {
         // Your hardened repository handles the connection check
         $success = $this->pdsRepository->syncRide($node);
+        $success = $this->pdsRepository->postRideToTimeline($node);
         
         if (!$success) {
           $this->logger()->error(dt('PDS returned a failure for node @id.', ['@id' => $nid]));
