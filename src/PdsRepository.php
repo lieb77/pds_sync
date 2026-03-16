@@ -245,36 +245,76 @@ class PdsRepository {
 	 *
 	 */
 	public function postRideToTimeline(NodeInterface $node) {
-
-		$text = "Lieb's Ride Log: \n";
-		$text .= "Route: " . $node->label() . "\n";
-		$text .= "Date: " . $node->get('field_ridedate')->value . "\n";
-		$text .= "Distance: " . $node->get('field_miles')->value . " miles\n";
-		$text .= "Bike: " . $node->get('field_bike')->entity?->label();
+		$rkey = $node->uuid();
+		$rideDateRaw = $node->get('field_ridedate')->value;
+		$createdAt = date('c', strtotime($rideDateRaw)); 
 		
-		$uri = $node->toUrl()->setAbsolute()->toString();
+		$textParts = [
+			"🚲Lieb's Ride Log🚲",
+			"Route: " . $node->label(),
+			"Date: " . $rideDateRaw,
+			"Distance: " . $node->get('field_miles')->value . " miles",
+			"Bike: " . ($node->get('field_bike')->entity?->label() ?? 'N/A'),
+			"", // Empty line for spacing
+		    "#bicycle #bikeride #bikepacking", 
+		];
+		
+		$text = implode("\n", $textParts);
+		$facets = $this->createTagFacets($text, ['bicycle', 'bikeride', 'bikepacking']);
+		
+		// Safely truncate the main text field just in case
+		if (mb_strlen($text) > 300) {
+		    $text = mb_substr($text, 0, 250) . '...';
+		}
+		
+		$body = MailFormatHelper::htmlToText($node->body->value);		
+		$uri  = $node->toUrl()->setAbsolute()->toString();
 		
 		$postRecord = [
-			'repo' => $this->did,
-			'collection' => 'app.bsky.feed.post',
-			'record' => [
-				'$type' => 'app.bsky.feed.post',
-				'text' => $text,
-				'createdAt' => date('c'),
-				'embed' => [
-					'$type' => 'app.bsky.embed.external',
-					'external' => [
-						'uri' => $uri,
-						'title' => "Ride: " . $node->label(),
-						'description' => "View ride on my website.",
-					],
-				],
+		'repo' => $this->did,
+		'collection' => 'app.bsky.feed.post',
+		'record' => [
+		  '$type' => 'app.bsky.feed.post',
+		  'text' => $text,
+		  'facets' => $facets,
+		  'createdAt' => $createdAt, 
+		  'tags' => ['lieb-ride-log'],
+		  'embed' => [
+			'$type' => 'app.bsky.embed.external',
+			'external' => [
+			  'uri' => $uri,
+			  'title' => "Ride: " . $node->label(),
+			  'description' => $body,
 			],
-		];		
+		  ],
+		],
+		];
+		
 		return $this->atprotoClient->request('POST', $this->endpoints->createRecord(), [
-        	'json' => $postRecord,
-    	]);	
+		'json' => $postRecord,
+		]);
 	}
+	
 
+	private function createTagFacets($text, $tags){			
+		$facets = [];
+		
+		foreach ($tags as $tag) {
+			$search = '#' . $tag;
+			$pos = strpos($text, $search); // Byte position
+			if ($pos !== false) {
+				$facets[] = [
+					'index' => [
+						'byteStart' => $pos,
+						'byteEnd' => $pos + strlen($search),
+					],
+					'features' => [['$type' => 'app.bsky.richtext.facet#tag', 'tag' => $tag]]
+				];
+			}
+		}
+		return $facets;
+			
+	}	
+	
 // End of class
 }
