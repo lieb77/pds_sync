@@ -14,6 +14,9 @@ use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\indieweb_webmention\Form\SyndicationForm;
 
 /**
  *
@@ -92,20 +95,40 @@ class PdsSyncHooks {
 		}
 	}
 	
-	#[Hook('entity_prepare_form')]
-	public function showSyncStatusOnForm(EntityInterface $entity, $operation, FormStateInterface $form_state): void {
-		if ($entity->bundle() === 'ride' && $operation === 'edit') {
-			$last_sync = $this->state->get('pds_sync.sync.' . $entity->uuid());
-		
-			if ($last_sync) {
-				  $date = $this->dateFormatter->format($last_sync, 'short');
-				  // This appears in the message area only during this form load
-		 	 	\Drupal::messenger()->addStatus(t('PDS Sync Status: Last pushed on @date.', ['@date' => $date]));
-			} else {
-		  	\Drupal::messenger()->addWarning(t('This ride has not been synced to the PDS yet.'));
-			}
+//	#[Hook('entity_prepare_form')]
+// 	public function showSyncStatusOnForm(EntityInterface $entity, $operation, FormStateInterface $form_state): void {
+// 		if ($entity->bundle() === 'ride' && $operation === 'edit') {
+// 			$last_sync = $this->state->get('pds_sync.sync.' . $entity->uuid());
+// 		
+// 			if ($last_sync) {
+// 				  $date = $this->dateFormatter->format($last_sync, 'short');
+// 				  // This appears in the message area only during this form load
+// 		 	 	\Drupal::messenger()->addStatus(t('PDS Sync Status: Last pushed on @date.', ['@date' => $date]));
+// 			} else {
+// 		  	\Drupal::messenger()->addWarning(t('This ride has not been synced to the PDS yet.'));
+// 			}
+// 		}
+// 	}
+	
+	/**
+	 * Add the at_uri field to the indieweb_syndication entity
+	 *
+	 */
+	#[Hook('entity_base_field_info')]
+	public function entityBaseFieldInfo(EntityTypeInterface $entity_type) {
+		if ($entity_type->id() === 'indieweb_syndication') {
+			$fields = [];
+			$fields['at_uri'] = BaseFieldDefinition::create('string')
+				->setLabel(t('AT Protocol URI'))
+				->setDescription(t('The full at:// URI for the Bluesky post.'))
+				->setSettings(['max_length' => 255])
+				->setDisplayOptions('view', ['label' => 'above', 'type' => 'string', 'weight' => -5])
+				->setDisplayOptions('form', ['type' => 'string_textfield', 'weight' => -5]);
+				
+			return $fields;
 		}
 	}
+	
 	
 // End of class.
 }

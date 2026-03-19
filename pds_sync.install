@@ -1,0 +1,25 @@
+<?php 
+
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Add the at_uri field to indieweb_syndication entities.
+ */
+function pds_sync_update_11001() {
+  $update_manager = \Drupal::entityDefinitionUpdateManager();
+  
+  // Define the field exactly as it is in your PdsHooksClass.
+  $storage_definition = BaseFieldDefinition::create('string')
+    ->setLabel(t('AT Protocol URI'))
+    ->setDescription(t('The full at:// URI for the Bluesky post.'))
+    ->setSettings(['max_length' => 255]);
+
+  // Install the definition. 
+  // Params: field_name, entity_type_id, provider_module, definition
+  $update_manager->installFieldStorageDefinition(
+    'at_uri', 
+    'indieweb_syndication', 
+    'pds_sync', 
+    $storage_definition
+  );
+}

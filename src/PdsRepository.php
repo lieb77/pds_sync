@@ -322,15 +322,9 @@ class PdsRepository {
 		$response = $this->atprotoClient->request('POST', $this->endpoints->createRecord(), [
 			'json' => $postRecord,
 		]);
-		if (isset($response->uri)) {
-    		$parts = explode('/', $response->uri);
-    		$rkey = end($parts);
-    
-			// Construct the web URL
-			$url = "https://bsky.app/profile/paullieberman.net/post/{$rkey}";
-			
+		if (isset($response->uri)) {   		
 			// Call your syndication method
-			$this->createSyndicationEntity($node->id(), $url);
+			$this->createSyndicationEntity($node->id(), $response->uri);
 		}		
 		return $response;
 	}
@@ -356,17 +350,25 @@ class PdsRepository {
 			
 	}	
 	
-	  /**
+	/**
      * Creates the IndieWeb Syndication Entity.
      */
-    private function createSyndicationEntity($nid, $syndicationUrl): void {
+    private function createSyndicationEntity($nid, $atUri): void {
+    
+    	$parts = explode('/', $atUri);
+    	$rkey = end($parts);
+    
+		// Construct the web URL
+		$syndicationUrl = "https://bsky.app/profile/paullieberman.net/post/{$rkey}";
+			
         try {
             $storage = $this->entityTypeManager->getStorage('indieweb_syndication');
             
             $syndication = $storage->create([
-                'entity_id' => $nid,
+                'entity_id'		 => $nid,
                 'entity_type_id' => 'node',
-                'url' => $syndicationUrl,
+                'url' 			 => $syndicationUrl,
+                'at_uri' 		 => $atUri,
             ]);
             
             $syndication->save();
