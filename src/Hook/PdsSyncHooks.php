@@ -58,23 +58,24 @@ class PdsSyncHooks {
         }
     }
 
-	
-	/**
-	 * Implements hook_node_insert().
-	 */	
 	#[Hook('node_insert')]
-	#[Hook('node_update')]
-	public function syncRideToPds(NodeInterface $node): void {
+	public function onRideInsert(NodeInterface $node): void {
 		if ($node->bundle() !== 'ride') return;
+		$this->syncRideToPds($node);
+		$this->pdsRepository->postRideToTimeline($node);
+	}
 	
+	#[Hook('node_update')]
+	public function onRideUpdate(NodeInterface $node): void {
+		if ($node->bundle() !== 'ride') return;
+		$this->syncRideToPds($node);		
+	}
+	
+	public function syncRideToPds(NodeInterface $node): void {			
 		try {
 			$result = $this->pdsRepository->syncRide($node);			
 			if ($result) {
 				$this->logger->info("Ride data synced to PDS for node @id.", ['@id' => $node->id()]);
-				if ($node->isNew()) {
-                	$this->pdsRepository->postRideToTimeline($node);
-					$this->logger->info("Ride @id announced on Bluesky timeline.", ['@id' => $node->id()]);            
-				}		
 			} else {
 				$this->logger->warning("Local ride @id saved, but PDS data sync failed.", ['@id' => $node->id()]);
 			}

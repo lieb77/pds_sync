@@ -30,6 +30,35 @@ class PdsRepository {
         $this->did = $atprotoClient->getDid();
     }
 
+
+	public function createFeedRecord() {	
+		$feedRecord = [
+			'repo' => 'did:plc:ntnmdg6fuvogzr6khf7agoqf', // Your DID
+			'collection' => 'app.bsky.feed.generator',
+			'rkey' => 'ride-log', // This matches the 'short name' in your URIs
+			'record' => [
+				'did' => 'did:web:paullieberman.net', // The DID of your Express App
+				'displayName' => "Lieb's Ride Log 🚲",
+				'description' => 'Automated cycling ride logs synced from paullieberman.net.',
+				'avatar' => [
+					'$type' => 'blob',
+					'ref' => [
+						'$link' => 'bafkreifuesssw2dbn7hqcmyattuvogimimbbfknvg7uhh7jltdjvijrkvq',
+					],
+					'mimeType' => 'image/jpeg',
+					'size' => 864807,
+				],
+				'createdAt' => date('c'),
+			],
+		];
+		
+		return $this->atprotoClient->request('POST', $this->endpoints->putRecord(), [
+			'json' => $feedRecord,
+		]);
+	
+	}
+
+
 	/**
 	 *
 	 *
@@ -290,9 +319,20 @@ class PdsRepository {
 		],
 		];
 		
-		return $this->atprotoClient->request('POST', $this->endpoints->createRecord(), [
-		'json' => $postRecord,
+		$response = $this->atprotoClient->request('POST', $this->endpoints->createRecord(), [
+			'json' => $postRecord,
 		]);
+		if (isset($response->uri)) {
+    		$parts = explode('/', $response->uri);
+    		$rkey = end($parts);
+    
+			// Construct the web URL
+			$url = "https://bsky.app/profile/paullieberman.net/post/{$rkey}";
+			
+			// Call your syndication method
+			$this->createSyndicationEntity($node->id(), $url);
+		}		
+		return $response;
 	}
 	
 
@@ -315,6 +355,30 @@ class PdsRepository {
 		return $facets;
 			
 	}	
+	
+	  /**
+     * Creates the IndieWeb Syndication Entity.
+     */
+    private function createSyndicationEntity($nid, $syndicationUrl): void {
+        try {
+            $storage = $this->entityTypeManager->getStorage('indieweb_syndication');
+            
+            $syndication = $storage->create([
+                'entity_id' => $nid,
+                'entity_type_id' => 'node',
+                'url' => $syndicationUrl,
+            ]);
+            
+            $syndication->save();
+            $this->logger->info('Created syndication entity for node @nid: @url', [
+                '@nid' => $nid,
+                '@url' => $syndicationUrl,
+            ]);
+        }
+        catch (\Exception $e) {
+            $this->logger->error('Failed to create syndication entity: @msg', ['@msg' => $e->getMessage()]);
+        }
+    }
 	
 // End of class
 }
