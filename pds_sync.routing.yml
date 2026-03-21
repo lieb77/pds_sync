@@ -52,3 +52,4 @@ pds_sync.delete:
   requirements:
     _permission: 'administer pds sync'
   methods: [DELETE]
+  

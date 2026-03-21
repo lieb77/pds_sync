@@ -319,15 +319,167 @@ class PdsRepository {
 		],
 		];
 		
-		$response = $this->atprotoClient->request('POST', $this->endpoints->createRecord(), [
-			'json' => $postRecord,
-		]);
+		$response = $this->atprotoClient->request('POST', $this->endpoints->createRecord(), 
+			['json' => $postRecord,]
+		);
 		if (isset($response->uri)) {   		
 			// Call your syndication method
 			$this->createSyndicationEntity($node->id(), $response->uri);
 		}		
 		return $response;
 	}
+	
+	/**
+     * Lists Syndication Entities.
+     */
+    public function getSyndications(): array {
+    
+    	$syndications = [];
+		$storage = $this->entityTypeManager->getStorage('indieweb_syndication');
+		
+		$sids = $storage->getQuery()
+			->accessCheck("FALSE")
+			->execute();
+
+		foreach ($sids as $id) {
+			$synd  = $storage->load($id);
+			$syndications[] = [
+				'url'    =>  $synd->get('url')->value,
+				'nid'    => $synd->get('entity_id')->value,
+				'at_uri' => $synd->get('at_uri')->value,
+			];		
+    	}
+    	return($syndications);
+    }
+
+	
+	/**
+	 * Check for
+	 *   - likes
+	 *   - Replies
+	 *
+	 * @param string $atUri 
+	 *
+	 */
+	public function checkForWebmentions($syndication){
+		
+		$atUri = $syndication['at_uri'];
+		$nid   = $syndication['nid'];
+		
+		$wmValues = [
+			'source' => "https://bsky.app/profile/paullieberman.net/post/" . basename($atUri),
+			'target' => "https://paullieberman.org/node/{$nid}",
+ 		    'type'   => "entry",
+ 		   ];
+			
+		
+		$response = $this->atprotoClient->request('GET',$this->endpoints->getPostThread(), 
+			['query' => ['uri' => $atUri]]
+		);
+		
+		if (isset($response->thread)) {
+			$post = $response->thread->post;
+	
+			// Replies
+			if ($post->replyCount > 0) {
+				$this->processReplies($response->thread->replies, $wmValues);
+			}
+			
+			// Likes
+			if ($post->likeCount > 0){
+				$this->processLikes($atUri, $wmValues);
+			}
+			
+			// Reposts
+			if ($post->repostCount > 0) {
+				$this->processReposts($atUri, $wmValues);
+			}
+			
+			// Quotes
+			// if ($post->quoteCount > 0) {}
+		}
+	}
+	
+	private function processReplies($replies, $wmValues) {
+		foreach ($replies as $reply) {
+			$post = $reply->post;
+			$author = $post->author;
+			
+			$rkey = basename($post->uri);
+			$source = "https://bsky.app/profile/{$author->handle}/post/{$rkey}";
+			
+			$values = array_merge($wmValues, [
+				'source' 	   => $source,
+				'property'     => 'in-reply-to',
+				'author_name'  => $author->displayName ?: $author->handle,
+				'author_url'   => "https://bsky.app/profile/{$author->handle}",
+				'author_photo' => $author->avatar ?? '',
+				'content_text' => $post->record->text, 
+				'status' => 1,
+			]);
+	
+			$this->saveIfNew($values);
+		}
+	}
+	
+	private function processLikes($atUri, $wmValues) {
+		$response = $this->atprotoClient->request('GET', $this->endpoints->getLikes(), [
+			'query' => ['uri' => $atUri]
+		]);
+	
+		foreach ($response->likes as $like) {
+			$actor = $like->actor;
+			
+			// For a Like, the 'Source' is the user's profile
+			$source = "https://bsky.app/profile/{$actor->handle}";
+			
+			$values = array_merge($wmValues, [
+				'source'       => $source,
+				'property'     => 'like-of',
+				'author_name'  => $actor->displayName ?: $actor->handle,
+				'author_url'   => $source,
+				'author_photo' => $actor->avatar ?? '',
+				'status' => 1,
+			]);
+	
+			$this->saveIfNew($values);
+		}
+	}
+
+	private function processReposts($atUri, $wmValues) {
+		$response = $this->atprotoClient->request('GET', "/xrpc/app.bsky.feed.getRepostedBy", [
+			'query' => ['uri' => $atUri]
+		]);
+	
+		foreach ($response->repostedBy as $actor) {
+			$source = "https://bsky.app/profile/{$actor->handle}";
+			$values = array_merge($wmValues, [
+				'source'       => $source,
+				'property'     => 'repost-of',
+				'author_name'  => $actor->displayName ?: $actor->handle,
+				'author_url'   => $source,
+				'author_photo' => $actor->avatar ?? '',
+				'status'       => 1,
+			]);
+			$this->saveIfNew($values);
+		}
+	}
+
+	private function saveIfNew($values) {
+		$storage = \Drupal::entityTypeManager()->getStorage('indieweb_webmention');
+
+		// Check if this specific source has already mentioned this target
+		$existing = $storage->loadByProperties([
+			'source' => $values['source'],
+			'target' => $values['target'],
+		]);
+	
+		if (empty($existing)) {
+		    $this->logger->info("Saving webmention for @target ", ['@target' => $values['target']]);
+			$storage->create($values)->save();
+		}
+	}
+
 	
 
 	private function createTagFacets($text, $tags){			

@@ -95,21 +95,7 @@ class PdsSyncHooks {
 		}
 	}
 	
-//	#[Hook('entity_prepare_form')]
-// 	public function showSyncStatusOnForm(EntityInterface $entity, $operation, FormStateInterface $form_state): void {
-// 		if ($entity->bundle() === 'ride' && $operation === 'edit') {
-// 			$last_sync = $this->state->get('pds_sync.sync.' . $entity->uuid());
-// 		
-// 			if ($last_sync) {
-// 				  $date = $this->dateFormatter->format($last_sync, 'short');
-// 				  // This appears in the message area only during this form load
-// 		 	 	\Drupal::messenger()->addStatus(t('PDS Sync Status: Last pushed on @date.', ['@date' => $date]));
-// 			} else {
-// 		  	\Drupal::messenger()->addWarning(t('This ride has not been synced to the PDS yet.'));
-// 			}
-// 		}
-// 	}
-	
+
 	/**
 	 * Add the at_uri field to the indieweb_syndication entity
 	 *
@@ -129,6 +115,21 @@ class PdsSyncHooks {
 		}
 	}
 	
+
+	/**
+	 * Check syndications and create webmentions
+	 *
+	 */
+	#[Hook('cron')]
+	function cron() {
+		$syndications = $this->pdsRepository->getSyndications();
+		foreach ($syndications as $syndication){
+			if(isset($syndication['at_uri'])){
+				$this->logger->info("Checking syndication of node @nid for webmentions.", ['@nid' => $syndication['nid']]);
+				$response = $this->pdsRepository->checkForWebmentions($syndication);
+			}
+		}
+	}
 	
 // End of class.
 }

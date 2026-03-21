@@ -66,4 +66,36 @@ class EndPoints
         return '/xrpc/com.atproto.repo.deleteRecord';
     }
 
+	/**
+	 * Get Post Thread
+	 */
+	public function getPostThread()
+    {
+        return '/xrpc/app.bsky.feed.getPostThread';
+    }
+    
+    /**
+     * Get likes
+     */
+     public function getLikes()
+     {
+     	return '/xrpc/app.bsky.feed.getLikes';
+     }
+    
+    /**
+     * Get quotes     
+     */
+     public function getQuotes()
+     {
+    	return '/xrpc/app.bsky.feed.getQuotes';
+     }
+    
+    /**
+     * Get RepostedBy
+     */
+     public function getRepostedBy()
+     {
+    	return '/xrpc/app.bsky.feed.getRepostedBy';
+     }
+    
 }
