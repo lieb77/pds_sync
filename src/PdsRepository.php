@@ -366,9 +366,12 @@ class PdsRepository {
 		$atUri = $syndication['at_uri'];
 		$nid   = $syndication['nid'];
 		
+		$node = $this->entityTypeManager->getStorage('node')->load($nid);
+		$target_path = $node->toUrl()->toString();
+		
 		$wmValues = [
 			'source' => "https://bsky.app/profile/paullieberman.net/post/" . basename($atUri),
-			'target' => "https://paullieberman.org/node/{$nid}",
+			'target' => $target_path, 
  		    'type'   => "entry",
  		   ];
 			
