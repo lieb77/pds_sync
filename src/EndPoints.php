@@ -10,92 +10,128 @@ namespace Drupal\pds_sync;
 class EndPoints
 {
 
-    public function createSession()
+    /**
+     * Returns the endpoint for creating a session.
+     *
+     * @return string
+     *   The endpoint URL.
+     */
+    public function createSession(): string
     {
         return '/xrpc/com.atproto.server.createSession';
     }
 
-    public function refreshSession()
+    /**
+     * Returns the endpoint for refreshing a session.
+     *
+     * @return string
+     *   The endpoint URL.
+     */
+    public function refreshSession(): string
     {
         return '/xrpc/com.atproto.server.refreshSession';
     }
 
-    
-	// Added for version 2
-	
-	/**
-     * Read a specific record by its rkey.
+    /**
+     * Returns the endpoint for reading a specific record by its rkey.
      * Useful for checking if a ride exists before importing.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-    public function getRecord()
+    public function getRecord(): string
     {
         return '/xrpc/com.atproto.repo.getRecord';
     }
 
     /**
-     * List all records in a collection (e.g., all rides).
-     * Useful for your Next.js verification or dashboard.
+     * Returns the endpoint for listing all records in a collection.
+     * Useful for Next.js verification or dashboard.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-    public function listRecords()
+    public function listRecords(): string
     {
         return '/xrpc/com.atproto.repo.listRecords';
     }
 
     /**
-     * Create a new record.
+     * Returns the endpoint for creating a new record.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-    public function createRecord()
+    public function createRecord(): string
     {
         return '/xrpc/com.atproto.repo.createRecord';
     }
 
     /**
-     * Update an existing record or create it if missing.
+     * Returns the endpoint for updating an existing record or creating it if missing.
      * Best for keeping Drupal edits in sync with the PDS.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-    public function putRecord()
+    public function putRecord(): string
     {
         return '/xrpc/com.atproto.repo.putRecord';
     }
 
     /**
-     * Delete a record from the PDS.
+     * Returns the endpoint for deleting a record.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-    public function deleteRecord()
+    public function deleteRecord(): string
     {
         return '/xrpc/com.atproto.repo.deleteRecord';
     }
 
-	/**
-	 * Get Post Thread
-	 */
-	public function getPostThread()
+    /**
+     * Returns the endpoint for getting a post thread.
+     *
+     * @return string
+     *   The endpoint URL.
+     */
+    public function getPostThread(): string
     {
         return '/xrpc/app.bsky.feed.getPostThread';
     }
-    
+
     /**
-     * Get likes
+     * Returns the endpoint for getting likes.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-     public function getLikes()
-     {
-     	return '/xrpc/app.bsky.feed.getLikes';
-     }
-    
+    public function getLikes(): string
+    {
+        return '/xrpc/app.bsky.feed.getLikes';
+    }
+
     /**
-     * Get quotes     
+     * Returns the endpoint for getting quotes.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-     public function getQuotes()
-     {
-    	return '/xrpc/app.bsky.feed.getQuotes';
-     }
-    
+    public function getQuotes(): string
+    {
+        return '/xrpc/app.bsky.feed.getQuotes';
+    }
+
     /**
-     * Get RepostedBy
+     * Returns the endpoint for getting reposts.
+     *
+     * @return string
+     *   The endpoint URL.
      */
-     public function getRepostedBy()
-     {
-    	return '/xrpc/app.bsky.feed.getRepostedBy';
-     }
-    
+    public function getRepostedBy(): string
+    {
+        return '/xrpc/app.bsky.feed.getRepostedBy';
+    }
+
 }
