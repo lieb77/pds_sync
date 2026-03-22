@@ -52,7 +52,7 @@ final class PdsSyncController extends ControllerBase {
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected EntityTypeManagerInterface $entityTypeManager;
+  protected EntityTypeManagerInterface $nodeManager;
 
   /**
    * The controller constructor.
@@ -65,7 +65,7 @@ final class PdsSyncController extends ControllerBase {
    *   The PDS repository service.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $dateFormatter
    *   The date formatter service.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $nodeManager
    *   The entity type manager service.
    */
   public function __construct(
@@ -73,13 +73,13 @@ final class PdsSyncController extends ControllerBase {
     PdsSyncManager $pdsSyncManager,
     PdsRepository $pdsRepository,
     DateFormatterInterface $dateFormatter,
-    EntityTypeManagerInterface $entityTypeManager
+    EntityTypeManagerInterface $nodeManager
   ) {
     $this->renderer = $renderer;
     $this->pdsSyncManager = $pdsSyncManager;
     $this->pdsRepository = $pdsRepository;
     $this->dateFormatter = $dateFormatter;
-    $this->entityTypeManager = $entityTypeManager;
+    $this->nodeManager = $nodeManager;
   }
 
   /**
@@ -200,7 +200,7 @@ final class PdsSyncController extends ControllerBase {
 
     if ($success) {
       // 1. Load the node to get the label/date for the row
-      $nodes = $this->entityTypeManager->getStorage('node')->loadByProperties(['uuid' => $rkey]);
+      $nodes = $this->nodeManager->getStorage('node')->loadByProperties(['uuid' => $rkey]);
       $node = reset($nodes);
 
       // 2. Prepare data, but MANUALLY set the sync_meta to 'Synced'
@@ -235,7 +235,7 @@ final class PdsSyncController extends ControllerBase {
 
     if ($success) {
       // 1. Reload the node
-      $nodes = $this->entityTypeManager->getStorage('node')->loadByProperties(['uuid' => $rkey]);
+      $nodes = $this->nodeManager->getStorage('node')->loadByProperties(['uuid' => $rkey]);
       $node = reset($nodes);
 
       // 2. Prepare data (it will now naturally be 'untracked' because state is cleared)

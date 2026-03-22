@@ -17,7 +17,7 @@ use Drupal\node\NodeInterface;
  */
 class PdsRepository {
 
-  protected string $did;
+  protected $did;
 
   /**
    * Constructs a new PdsRepository object.
@@ -186,8 +186,10 @@ class PdsRepository {
       }
 
       $response = $this->atprotoClient->request('GET', $endpoint, $query);
-      $all_records = array_merge($all_records, $response->records);
-      $cursor = $response->cursor ?? NULL;
+      if (isset($response->records)){
+	      $all_records = array_merge($all_records, $response->records);
+    	  $cursor = $response->cursor ?? NULL;
+      }
     } while ($cursor);
 
     // 2. The Transformer: Convert stdClass to your enriched Array structure.

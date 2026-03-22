@@ -49,7 +49,7 @@ class AtprotoClient {
    *
    * @var \Drupal\Core\TempStore\PrivateTempStoreFactory
    */
-  protected PrivateTempStoreFactory $tempstore;
+  protected  $tempstore;
 
   /**
    * The PDS URL.
