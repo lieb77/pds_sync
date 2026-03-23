@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\node\NodeInterface;
+use Drupal\pds_sync\PdsRepository;
 
 /**
  * Orchestrates the synchronization between Drupal Nodes and the PDS.

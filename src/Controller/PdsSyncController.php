@@ -101,7 +101,7 @@ final class PdsSyncController extends ControllerBase {
   public function dashboardShell(): array {
     // 1. Keep your existing logic to generate the initial "Local Drupal" list
     $nodes = $this->pdsSyncManager->getRecentRides(25);
-    $pds_rides = $this->pdsRepository->getRides();
+	$pds_rides = $this->pdsRepository->getRides();
 
     $rides = [];
     foreach ($nodes as $node) {

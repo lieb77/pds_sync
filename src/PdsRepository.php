@@ -16,7 +16,7 @@ use Drupal\atproto_client\Client\AtprotoClient;
 /**
  * Manages the custom Bike Ride lexicon on the PDS.
  */
-class PdsRideRepository {
+class PdsRepository {
 
     protected $did;
 
@@ -52,7 +52,7 @@ class PdsRideRepository {
             'body' => MailFormatHelper::htmlToText($node->body->value),
         ];
 
-        return $this->atprotoClient->putRecord(), [
+        return $this->atprotoClient->putRecord( [
             'json' => [
                 'repo' => $this->did,
                 'collection' => 'net.paullieberman.bike.ride',
@@ -67,7 +67,7 @@ class PdsRideRepository {
      */
     public function deleteRide(string $rkey): bool {
         try {
-            $this->atprotoClient->deleteRecord(), [
+            $this->atprotoClient->deleteRecord( [
                 'json' => [
                     'repo' => $this->did,
                     'collection' => 'net.paullieberman.bike.ride',
@@ -88,22 +88,23 @@ class PdsRideRepository {
      */
     public function getRides(): array {
         $all_records = [];
-        $cursor = NULL;
+        $cursor = NULL; 
+		 
+		do {
+			$query = ['repo' => $this->did, 'collection' => 'net.paullieberman.bike.ride', 'limit' => 100];
+			if ($cursor) { 
+				$query['cursor'] = $cursor; 
+			}
+		
+			$response = $this->atprotoClient->listRecords($query);
+			$all_records = array_merge($all_records, $response->records);
+			$cursor = $response->cursor ?? NULL;
+		} while ($cursor);
 
-        do {
-            $query = ['query' => ['repo' => $this->did, 'collection' => 'net.paullieberman.bike.ride', 'limit' => 100]];
-            if ($cursor) { $query['query']['cursor'] = $cursor; }
-
-            $response = $this->atprotoClient->listRecords($query);
-            if (isset($response->records)) {
-                $all_records = array_merge($all_records, $response->records);
-                $cursor = $response->cursor ?? NULL;
-            }
-        } while ($cursor);
 
         $rides = array_map(function ($record) {
             $record_array = (array) $record->value;
-            $record_array['rkey'] = end(explode('/', $record->uri));
+			$record_array['rkey'] = basename($record->uri);
             $record_array['sync_meta'] = $this->getReconciledStatus($record_array);
             return $record_array;
         }, $all_records);

@@ -89,7 +89,6 @@ class PdsSyncHooks {
         }
 
         $this->syncRideToPds($node);
-        $this->pdsRepository->postRideToTimeline($node);
     }
 
     /**
@@ -146,48 +145,7 @@ class PdsSyncHooks {
         }
     }
 
-    /**
-     * Implements hook_entity_base_field_info().
-     *
-     * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
-     *   The entity type definition.
-     *
-     * @return array|null
-     *   An array of base field definitions, or NULL if not applicable.
-     */
-    #[Hook('entity_base_field_info')]
-    public function entityBaseFieldInfo(EntityTypeInterface $entity_type): ?array
-    {
-        if ($entity_type->id() === 'indieweb_syndication') {
-            $fields = [];
-            $fields['at_uri'] = BaseFieldDefinition::create('string')
-                ->setLabel(t('AT Protocol URI'))
-                ->setDescription(t('The full at:// URI for the Bluesky post.'))
-                ->setSettings(['max_length' => 255])
-                ->setDisplayOptions('view', ['label' => 'above', 'type' => 'string', 'weight' => -5])
-                ->setDisplayOptions('form', ['type' => 'string_textfield', 'weight' => -5]);
-
-            return $fields;
-        }
-
-        return NULL;
-    }
-
-    /**
-     * Implements hook_cron().
-     */
-    #[Hook('cron')]
-    public function cron(): void
-    {
-        $syndications = $this->pdsRepository->getSyndications();
-
-        foreach ($syndications as $syndication) {
-            if (isset($syndication['at_uri'])) {
-                $this->logger->info("Checking syndication of node @nid for webmentions.", ['@nid' => $syndication['nid']]);
-                $this->pdsRepository->checkForWebmentions($syndication);
-            }
-        }
-    }
+   
 
 }
 

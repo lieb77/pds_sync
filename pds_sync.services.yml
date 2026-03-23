@@ -6,9 +6,6 @@ services:
     parent: logger.channel_base
     arguments: ['pds_sync']
     
-  pds_sync.endpoints:
-    class: Drupal\pds_sync\EndPoints
-
   pds_sync.repository:
     class: Drupal\pds_sync\PdsRepository
     arguments:
