@@ -9,22 +9,10 @@ services:
   pds_sync.endpoints:
     class: Drupal\pds_sync\EndPoints
 
-  pds_sync.atproto_client:
-    class: Drupal\pds_sync\AtprotoClient
-    arguments:
-      - '@logger.channel.pds_sync'
-      - '@config.factory'
-      - '@key.repository'
-      - '@http_client'
-      - '@tempstore.private'
-      - '@pds_sync.endpoints'
-
-
   pds_sync.repository:
     class: Drupal\pds_sync\PdsRepository
     arguments:
-      - '@pds_sync.atproto_client'
-      - '@pds_sync.endpoints'
+      - '@atproto_client.atproto_client'
       - '@state'
       - '@entity_type.manager'
       - '@logger.channel.pds_sync'
