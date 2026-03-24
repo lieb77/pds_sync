@@ -5,5 +5,5 @@ package: Custom
 core_version_requirement: ^10 || ^11
 configure: pds_sync.settings
 dependencies:
-  - atproto_client:atptoto_client
+  - atproto_client:atproto_client
 

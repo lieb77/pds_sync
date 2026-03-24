@@ -34,6 +34,7 @@ class PdsRepository {
      * Syncs a ride node to the custom PDS collection.
      */
     public function syncRide(NodeInterface $node): mixed {
+    
         $rkey = $node->uuid();
         $bid = $node->field_bike->target_id;
         $bikeName = $bid ? Node::load($bid)->getTitle() : 'Unknown Bike';
@@ -52,13 +53,11 @@ class PdsRepository {
             'body' => MailFormatHelper::htmlToText($node->body->value),
         ];
 
-        return $this->atprotoClient->putRecord( [
-            'json' => [
-                'repo' => $this->did,
-                'collection' => 'net.paullieberman.bike.ride',
-                'rkey' => $rkey,
-                'record' => $record,
-            ],
+        return $this->atprotoClient->putRecord( [            
+			'repo' => $this->did,
+			'collection' => 'net.paullieberman.bike.ride',
+			'rkey' => $rkey,
+			'record' => $record,
         ]);
     }
 
@@ -112,6 +111,38 @@ class PdsRepository {
         usort($rides, fn($a, $b) => strcmp($b['date'], $a['date']));
         return $rides;
     }
+
+	/**
+	 * Synchronizes a specific PDS record by its rkey (UUID).
+	 */
+	public function syncByRkey(string $rkey): bool {
+		// 1. Find the local node by UUID
+		$nodes = $this->entityTypeManager->getStorage('node')
+			->loadByProperties(['uuid' => $rkey]);
+
+		$node = reset($nodes);
+
+		if (!$node) {
+			// IT Vet Log: Don't just fail silently; log the Ghost attempt.
+			$this->logger->error('Sync failed: No local node found for UUID @uuid', ['@uuid' => $rkey]);
+			return false;
+		}
+
+		// 2. Reuse your existing sync logic from the DrupalSky extraction
+		// This likely calls your atproto client to PUT/POST the record.
+		$result = $this->syncRide($node);
+
+		if ($result) {
+			// 3. Update the State store to mark it as Synced
+			// We use the UUID as the key to keep it portable across environments.
+			$this->state->set('pds_sync.sync.' . $node->uuid(), $this->time->getRequestTime());
+
+			$this->logger->info('Manual dashboard sync successful for ride @uuid', ['@uuid' => $rkey]);
+			return true;
+		}
+		return false;
+	}
+
 
     private function getReconciledStatus(array $pds_record): array {
         $uuid = $pds_record['rkey'];
