@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Drupal\pds_sync\Plugin\Action;
 
 use Drupal\Core\Action\ActionBase;
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\atproto_client\Client\AtprotoClient;
 
 /**
  * Provides a 'Hello World' Action.
@@ -25,7 +27,7 @@ final class HelloWorldAction extends ActionBase implements ContainerFactoryPlugi
     array $configuration,
     $plugin_id,
     $plugin_definition,
-    private readonly MessengerInterface $messenger
+    private readonly AtprotoClient $atprotoClient // Your custom service
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -35,15 +37,15 @@ final class HelloWorldAction extends ActionBase implements ContainerFactoryPlugi
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('messenger')
+      $container->get('atproto_client.atproto_client') // Replace with your actual service ID
     );
   }
-
+  
   /**
    * {@inheritdoc}
    */
   public function execute($entity = NULL): void {
-    $this->messenger->addMessage($this->t('Hello World! You saved the node: @title', [
+    $this->messenger()->addMessage($this->t('Hello World! You saved the node: @title', [
       '@title' => $entity?->label() ?? 'Unknown',
     ]));
   }
@@ -51,7 +53,13 @@ final class HelloWorldAction extends ActionBase implements ContainerFactoryPlugi
   /**
    * {@inheritdoc}
    */
-  public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE): bool {
-    return TRUE;
+  public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
+    // In Drupal 11, we should return an AccessResult object.
+    $result = AccessResult::allowed();
+
+    // If the caller explicitly asked for a boolean (the default), 
+    // we return the result of isAllowed(). Otherwise, return the object.
+    return $return_as_object ? $result : $result->isAllowed();
   }
+  
 }

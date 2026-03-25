@@ -4,43 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\pds_sync\Hook;
 
-use Drupal\Component\Datetime\TimeInterface;
-use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Hook\Attribute\Hook;
-use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\State\StateInterface;
-use Drupal\node\NodeInterface;
-use Drupal\pds_sync\PdsRepository;
 
 /**
  * Provides hook implementations for the PDS Sync module.
  */
 class PdsSyncHooks {
-
-    /**
-     * Constructs a new PdsSyncHooks instance.
-     *
-     * @param \Drupal\pds_sync\PdsRepository $pdsRepository
-     *   The PDS repository.
-     * @param \Drupal\Core\State\StateInterface $state
-     *   The state service.
-     * @param \Drupal\Component\Datetime\TimeInterface $time
-     *   The time service.
-     * @param \Drupal\Core\Datetime\DateFormatterInterface $dateFormatter
-     *   The date formatter service.
-     * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
-     *   The logger channel.
-     */
-    public function __construct(
-        protected PdsRepository $pdsRepository,
-        protected StateInterface $state,
-        protected TimeInterface $time,
-        protected DateFormatterInterface $dateFormatter,
-        protected LoggerChannelInterface $logger,
-    ) {}
 
     /**
      * Implements hook_help().
@@ -74,78 +44,6 @@ class PdsSyncHooks {
 
         return NULL;
     }
-
-    /**
-     * Implements hook_node_insert().
-     *
-     * @param \Drupal\node\NodeInterface $node
-     *   The node being inserted.
-     */
-    #[Hook('node_insert')]
-    public function onRideInsert(NodeInterface $node): void
-    {
-        if ($node->bundle() !== 'ride') {
-            return;
-        }
-
-        $this->syncRideToPds($node);
-    }
-
-    /**
-     * Implements hook_node_update().
-     *
-     * @param \Drupal\node\NodeInterface $node
-     *   The node being updated.
-     */
-    #[Hook('node_update')]
-    public function onRideUpdate(NodeInterface $node): void
-    {
-        if ($node->bundle() !== 'ride') {
-            return;
-        }
-
-        $this->syncRideToPds($node);
-    }
-
-    /**
-     * Synchronizes ride data to PDS.
-     *
-     * @param \Drupal\node\NodeInterface $node
-     *   The ride node.
-     */
-    public function syncRideToPds(NodeInterface $node): void
-    {
-        try {
-            $result = $this->pdsRepository->syncRide($node);
-
-            if ($result) {
-                $this->logger->info("Ride data synced to PDS for node @id.", ['@id' => $node->id()]);
-            }
-            else {
-                $this->logger->warning("Local ride @id saved, but PDS data sync failed.", ['@id' => $node->id()]);
-            }
-        }
-        catch (\Exception $e) {
-            $this->logger->critical("PDS Hook crashed: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Implements hook_node_delete().
-     *
-     * @param \Drupal\node\NodeInterface $node
-     *   The node being deleted.
-     */
-    #[Hook('node_delete')]
-    public function deleteRideCleanup(NodeInterface $node): void
-    {
-        if ($node->bundle() === 'ride') {
-            // Cleanup the state entry when the node is gone.
-            $this->state->delete('pds_sync.sync.' . $node->uuid());
-        }
-    }
-
-   
 
 }
 
