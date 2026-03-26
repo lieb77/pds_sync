@@ -53,10 +53,6 @@ final class DeleteRideAction extends ActionBase implements ContainerFactoryPlugi
 		if ($entity->bundle() === 'ride') {
 			// Cleanup the state entry when the node is gone.
 			$this->state->delete('pds_sync.sync.' . $entity->uuid());
-			
-			$this->logger('pds_sync')->info('Cleaned up PDS state for deleted ride @uuid', [
-				'@uuid' => $entity->uuid(),
-			]);
 		}
 	}
 	

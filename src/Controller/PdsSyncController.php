@@ -231,25 +231,31 @@ final class PdsSyncController extends ControllerBase {
    * Deletes a record from the PDS and clears local sync state.
    */
   public function delete(string $rkey): Response {
-    $success = $this->pdsRepository->deleteRide($rkey);
 
+    $success = $this->pdsRepository->deleteRide($rkey);
+    
     if ($success) {
+    
       // 1. Reload the node
       $nodes = $this->nodeManager->getStorage('node')->loadByProperties(['uuid' => $rkey]);
-      $node = reset($nodes);
-
-      // 2. Prepare data (it will now naturally be 'untracked' because state is cleared)
-      $ride_data = $this->prepareRideData($node, []);
-
-      $build = [
-        '#type' => 'component',
-        '#component' => 'pds_sync:pds-ride-row',
-        '#props' => ['ride' => $ride_data],
-      ];
-
-      // 3. Return the fresh row HTML instead of an empty response
-      $html = $this->renderer->renderInIsolation($build);
-      return new Response(trim((string) $html));
+	  if (! empty($nodes)) {
+		  $node = reset($nodes);
+	
+		  // 2. Prepare data (it will now naturally be 'untracked' because state is cleared)
+		  $ride_data = $this->prepareRideData($node, []);
+	
+		  $build = [
+			'#type' => 'component',
+			'#component' => 'pds_sync:pds-ride-row',
+			'#props' => ['ride' => $ride_data],
+		  ];
+	
+		  // 3. Return the fresh row HTML instead of an empty response
+		  $html = $this->renderer->renderInIsolation($build);
+		  return new Response(trim((string) $html));
+		}
+		// The node doesn't exist in Drupal
+		return false;
     }
     return new Response('Delete failed', 500);
   }
