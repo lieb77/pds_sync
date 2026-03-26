@@ -109,6 +109,32 @@ class SyncDrushCommands extends DrushCommands {
 		
 		$this->output()->writeln(dt('Process complete.'));
 	}
+	
+	/**
+	* Publishes the Standard Site Publication record to the PDS.
+	*
+	* @command pds_sync:ss-pub
+	* @aliases pds-cf
+	*/
+	public function ssPubGen(): void {
+		$this->output()->writeln(dt('Starting creation of SSP record...')); 
+		try {
+			$response = $this->pdsRepository->createStandardSitePublicationRecord();
+			
+			if ($response) {
+				$this->logger()->success(dt('Successfully created/updated the SSP record.'));
+			} else {
+				$this->logger()->error(dt('SSP record creation failed without an exception.'));
+			}
+		} catch (\Exception $e) {
+			$this->logger()->error(dt('Critical error creating SSP record: @msg', [
+			'@msg' => $e->getMessage(),
+			]));
+		}
+		$this->output()->writeln(dt('Process complete.'));
+	}
+	
+	
 }
 
 

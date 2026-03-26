@@ -53,3 +53,12 @@ pds_sync.delete:
     _permission: 'administer pds sync'
   methods: [DELETE]
   
+pds_sync.test:
+  path: '/pds-sync/test'
+  defaults:
+    _title: 'PDS test'
+    _controller: '\Drupal\pds_sync\Controller\PdsSyncController::blogToSsD'
+  requirements:
+    _permission: 'administer pds sync'
+  
+  

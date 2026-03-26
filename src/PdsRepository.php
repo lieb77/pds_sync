@@ -11,6 +11,7 @@ use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\State\StateInterface;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
+use Drupal\taxonomy\Entity\Term;
 use Drupal\atproto_client\Client\AtprotoClient;
 
 /**
@@ -60,6 +61,40 @@ class PdsRepository {
 			'record' => $record,
         ]);
     }
+
+
+	/**
+	 * Publish a blog post as a site.standard.document record
+	 *
+	 */
+	public function postToStandardSite(NodeInterface $node): mixed {
+		
+		$tags = [];
+		foreach ($node->get('field_tags') as $tagRef) {
+			$tid = $tagRef->target_id;
+			$tags[] = Term::load($tid)->getName();
+		}
+			 
+	 	$record = [
+			"$type" 		=>  "site.standard.document",
+			"site" 			=>  "at://" . $this->did . "site.standard.publication/liebs-log",
+			"title" 		=>  $node->get('title')->value,
+			"path" 			=>  $node->toUrl()->toString(),
+			"description" 	=>  $node->get('title')->value,
+			"publishedAt" 	=>  date('c', (int) $node->getCreatedTime()),
+			"tags" 			=>  $tags,
+			"textContent" 	=>  $node->body->value,					
+	 	];
+	 	
+		return $this->atprotoClient->putRecord( [            
+			'repo' => $this->did,
+			'collection' => 'site.standard.document',
+			'rkey'	=> $node->uuid(),
+			'record' => $record,
+        ]);	 
+	 }
+
+
 
     /**
      * Deletes a ride from the PDS.
@@ -165,5 +200,58 @@ class PdsRepository {
         return ['status' => 'synced', 'label' => 'Synced', 'class' => 'status-success', 'node' => $node];
     }
 
+	/**
+	 * Create Feed Record
+	 *
+	 * This is a one time thing - called from Drush
+	 */
+	public function createFeedRecord(): mixed {
+		$feedRecord = [
+			'repo' => 'did:plc:ntnmdg6fuvogzr6khf7agoqf', // Your DID
+			'collection' => 'app.bsky.feed.generator',
+			'rkey' => 'ride-log', // This matches the 'short name' in your URIs
+			'record' => [
+				'did' => 'did:web:paullieberman.net', // The DID of your Express App
+				'displayName' => "Lieb's Ride Log 🚲",
+				'description' => 'Automated cycling ride logs synced from paullieberman.net.',
+				'avatar' => [
+					'$type' => 'blob',
+					'ref' => [
+						'$link' => 'bafkreifuesssw2dbn7hqcmyattuvogimimbbfknvg7uhh7jltdjvijrkvq',
+					],
+					'mimeType' => 'image/jpeg',
+					'size' => 864807,
+				],
+				'createdAt' => date('c'),
+			],
+		];
+		
+		return $this->atprotoClient->putRecord([$feedRecord]);
+		
+	}
 
+	/**
+	 * Create Standard Site Publication Record
+	 *
+	 * This is a one time thing - called from Drush
+	 */
+	public function createStandardSitePublicationRecord(): mixed {
+		$record = [	
+			'repo'  		=> 'did:plc:ntnmdg6fuvogzr6khf7agoqf',
+			'collection'	=> 'site.standard.publication',
+			'rkey'			=> 'liebs-log',
+			'record' => [
+				'$type'	=>  "site.standard.publication",
+				"url" 	=>  "https://paullieberman.org/blog",
+				"name" 	=>  "Lieb's Log",
+				"description" =>  "Paul Lieberman's Blog",
+				"preferences" =>  [
+					"showInDiscover" =>  true
+				],
+			],
+		];
+		return $this->atprotoClient->putRecord($record);	
+	}
+	
+// end-of-class
 }
