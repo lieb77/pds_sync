@@ -12,15 +12,15 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\pds_sync\PdsRepository;
 
 /**
- * Provides a 'Sync Ride' Action.
+ * Provides a 'Sync blog' Action.
  *
  * @Action(
- * id = "pds_sync_sync_ride",
- * label = @Translation("Syncs a Drupal ride entity to the PDS"),
+ * id = "pds_sync_sync_blog",
+ * label = @Translation("Syncs a Drupal blog entity to the Standard Site"),
  * type = "node"
  * )
  */
-final class SyncRideAction extends ActionBase implements ContainerFactoryPluginInterface {
+final class SyncBlogAction extends ActionBase implements ContainerFactoryPluginInterface {
 
     public function __construct(
         array $configuration,
@@ -47,7 +47,7 @@ final class SyncRideAction extends ActionBase implements ContainerFactoryPluginI
 		if (!$entity instanceof \Drupal\node\NodeInterface) {
 			return;
 		}	
-		$this->pdsRepository->syncRide($entity);
+		$this->pdsRepository->postToStandardSite($entity);
 	}
 
     /**

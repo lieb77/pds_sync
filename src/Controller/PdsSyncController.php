@@ -293,7 +293,7 @@ final class PdsSyncController extends ControllerBase {
 	 * Hard coded values for testing
 	 */
 	 public function blogToSsd() {
-	 	$nid  = 9314;
+	 	$nid  = 9323;
 	 	$node = $this->nodeManager->getStorage('node')->load($nid);
 	 	$response = $this->pdsRepository->postToStandardSite($node);
 	 	

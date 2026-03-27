@@ -77,13 +77,13 @@ class PdsRepository {
 			 
 	 	$record = [
 			"$type" 		=>  "site.standard.document",
-			"site" 			=>  "at://" . $this->did . "site.standard.publication/liebs-log",
+			"site" 			=>  "at://" . $this->did . "/site.standard.publication/liebs-log",
 			"title" 		=>  $node->get('title')->value,
 			"path" 			=>  $node->toUrl()->toString(),
-			"description" 	=>  $node->get('title')->value,
+			"description" 	=>  MailFormatHelper::htmlToText($node->body->value),
 			"publishedAt" 	=>  date('c', (int) $node->getCreatedTime()),
 			"tags" 			=>  $tags,
-			"textContent" 	=>  $node->body->value,					
+			"textContent" 	=>  MailFormatHelper::htmlToText($node->body->value),					
 	 	];
 	 	
 		return $this->atprotoClient->putRecord( [            
@@ -242,7 +242,7 @@ class PdsRepository {
 			'rkey'			=> 'liebs-log',
 			'record' => [
 				'$type'	=>  "site.standard.publication",
-				"url" 	=>  "https://paullieberman.org/blog",
+				"url" 	=>  "https://paullieberman.org",
 				"name" 	=>  "Lieb's Log",
 				"description" =>  "Paul Lieberman's Blog",
 				"preferences" =>  [
