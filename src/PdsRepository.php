@@ -80,7 +80,7 @@ class PdsRepository {
 			"site" 			=>  "at://" . $this->did . "/site.standard.publication/liebs-log",
 			"title" 		=>  $node->get('title')->value,
 			"path" 			=>  $node->toUrl()->toString(),
-			"description" 	=>  MailFormatHelper::htmlToText($node->body->value),
+			"description" 	=>  mb_substr(MailFormatHelper::htmlToText($node->body->value), 0, 3000), // Should use body->summary
 			"publishedAt" 	=>  date('c', (int) $node->getCreatedTime()),
 			"tags" 			=>  $tags,
 			"textContent" 	=>  MailFormatHelper::htmlToText($node->body->value),					
